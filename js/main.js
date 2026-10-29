@@ -467,6 +467,23 @@ function renderContact() {
   }, { threshold: 0.5 }).observe(cd);
 }
 
+// Section titles "decode" from random glyphs as they arrive, like a cartridge loading.
+const GLYPHS = '#$%&*+=?@ABCDEFGHJKLMNPRSTUVWXYZ0123456789';
+function scramble(el) {
+  if (reduceMotion) return;
+  const final = el.textContent;
+  el.setAttribute('aria-label', final);
+  let frame = 0;
+  const total = 18;
+  const tick = () => {
+    frame++;
+    const done = Math.floor((frame / total) * final.length);
+    el.textContent = [...final].map((ch, i) => (i < done || ch === ' ' ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0])).join('');
+    if (frame < total) setTimeout(tick, 32); else el.textContent = final;
+  };
+  tick();
+}
+
 // --- Nav, reveal, section tracking ------------------------------------------------------------------
 function wireNav() {
   const links = $$('.hud-nav a');
@@ -495,7 +512,13 @@ function wireNav() {
   $$('[data-section]').forEach((s) => sectionObs.observe(s));
 
   const revealObs = new IntersectionObserver((entries) => {
-    entries.forEach((e) => { if (e.isIntersecting) { e.target.classList.add('in'); revealObs.unobserve(e.target); } });
+    entries.forEach((e) => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      revealObs.unobserve(e.target);
+      const title = e.target.querySelector('.sec-title');
+      if (title) scramble(title);
+    });
   }, { threshold: 0.12 });
   $$('.reveal').forEach((el) => revealObs.observe(el));
 

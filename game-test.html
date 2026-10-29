@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Bug Blaster Test Harness</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --ink: #0b0a16;
+      --ink-2: #141229;
+      --paper: #f3efe6;
+      --muted: #a6a1c4;
+      --coin: #ffc93c;
+      --neon: #3cf0ff;
+      --hot: #ff4f9a;
+      --lime: #7dff8a;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      min-height: 100vh;
+      margin: 0;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      overflow-x: hidden;
+      color: var(--paper);
+      background:
+        linear-gradient(rgba(60, 240, 255, 0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(60, 240, 255, 0.035) 1px, transparent 1px),
+        radial-gradient(circle at 50% 20%, #1e1a3a, var(--ink) 62%);
+      background-size: 24px 24px, 24px 24px, auto;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    main {
+      width: min(100%, 1040px);
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      color: var(--coin);
+      font-size: clamp(18px, 4vw, 32px);
+      letter-spacing: 0.12em;
+      text-shadow: 3px 3px 0 var(--hot);
+    }
+
+    p {
+      margin: 0 0 18px;
+      color: var(--muted);
+    }
+
+    .cabinet {
+      padding: 10px;
+      border: 3px solid var(--neon);
+      background: var(--ink-2);
+      box-shadow: 8px 8px 0 var(--hot), -5px -5px 0 #1e1a3a;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: var(--ink);
+      image-rendering: pixelated;
+      outline: none;
+    }
+
+    .readout {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      margin-top: 14px;
+      border: 2px solid #1e1a3a;
+      background: #1e1a3a;
+    }
+
+    .readout div {
+      min-height: 52px;
+      padding: 9px;
+      background: var(--ink-2);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .readout strong {
+      display: block;
+      margin-top: 4px;
+      color: var(--lime);
+      font-size: 15px;
+    }
+
+    @media (max-width: 560px) {
+      body { padding: 12px; }
+      .readout { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>BUG BLASTER LAB</h1>
+    <p>Standalone module harness. Open the console to inspect fake SFX and callbacks.</p>
+    <section class="cabinet" aria-label="Bug Blaster game test">
+      <canvas id="game" aria-label="Bug Blaster arcade game" tabindex="0"></canvas>
+    </section>
+    <section class="readout" aria-live="polite">
+      <div>SCORE<strong id="score">000000</strong></div>
+      <div>EVENT<strong id="event">READY</strong></div>
+      <div>SFX<strong id="sfx">SILENT</strong></div>
+    </section>
+  </main>
+
+  <script type="module">
+    import { createGame } from './js/game.js';
+
+    const scoreEl = document.querySelector('#score');
+    const eventEl = document.querySelector('#event');
+    const sfxEl = document.querySelector('#sfx');
+
+    const game = createGame(document.querySelector('#game'), {
+      onScore(score) {
+        scoreEl.textContent = String(score).padStart(6, '0');
+        console.log('[score]', score);
+      },
+      onGameOver(score) {
+        eventEl.textContent = `GAME OVER ${score}`;
+        console.log('[game over]', score);
+      },
+      onAchievement(id, label) {
+        eventEl.textContent = label.toUpperCase();
+        console.log('[achievement]', id, label);
+      },
+      sfx: {
+        play(name) {
+          sfxEl.textContent = name.toUpperCase();
+          console.log('[sfx]', name);
+        },
+      },
+    });
+
+    window.bugBlaster = game;
+    window.addEventListener('pagehide', () => game.destroy(), { once: true });
+  </script>
+</body>
+</html>
