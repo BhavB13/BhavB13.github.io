@@ -292,6 +292,10 @@ function makeCoins(n) {
   const coins = [];
   for (let i = 0; i < n; i++) {
     const m = new THREE.Mesh(geo, mat);
+    // generous invisible hitbox so moving coins are easy to click
+    const hit = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6), new THREE.MeshBasicMaterial({ visible: false }));
+    hit.userData.coin = m;
+    m.add(hit);
     m.userData = { a: (i / n) * Math.PI * 2, r: 1.8 + (i % 2) * 0.5, y: 0.6 + (i % 3) * 0.75, pop: 0 };
     coins.push(m);
   }
@@ -361,21 +365,29 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   window.addEventListener('resize', resize);
 
   // input
+  const ray = new THREE.Raycaster();
   const mouse = new THREE.Vector2();
   const target = new THREE.Vector2();
+  const hitboxes = () => coins.filter((c) => c.userData.pop === 0 && !c.userData.respawn).map((c) => c.children[0]);
+  const pick = (x, y) => {
+    ray.setFromCamera(new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1), camera);
+    const hit = ray.intersectObjects(hitboxes(), false)[0];
+    return hit ? hit.object.userData.coin : null;
+  };
+  let hovering = false;
   const onMove = (e) => {
     target.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+    if (e.pointerType !== 'mouse') return;
+    const over = window.scrollY < window.innerHeight && !e.target.closest?.('a, button, dialog') && !!pick(e.clientX, e.clientY);
+    if (over !== hovering) { hovering = over; document.body.style.cursor = over ? 'pointer' : ''; }
   };
   window.addEventListener('pointermove', onMove, { passive: true });
 
-  const ray = new THREE.Raycaster();
   let collected = 0;
   const onClick = (e) => {
-    const p = new THREE.Vector2((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
-    ray.setFromCamera(p, camera);
-    const hit = ray.intersectObjects(coins.filter((c) => c.userData.pop === 0))[0];
-    if (hit) {
-      hit.object.userData.pop = 1;
+    const coin = pick(e.clientX, e.clientY);
+    if (coin) {
+      coin.userData.pop = 1;
       collected++;
       onCoin(collected, e.clientX, e.clientY);
       return true;
@@ -393,6 +405,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   let t = 0;
   let offset = 0;
   let lastDim = -1;
+  let skip = false;
 
   function setPalette(name) {
     palette = name;
@@ -411,6 +424,9 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     if (!running) return;
     requestAnimationFrame(frame);
     if (!visible) { last = now; return; }
+    // once the hero is scrolled away the world is only a dimmed backdrop: ~30fps is plenty
+    skip = !skip;
+    if (skip && window.scrollY > window.innerHeight * 1.2) return;
     const dt = Math.min((now - last) / 1000, 0.05);
     last = now;
     t += dt;
@@ -454,7 +470,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
         c.scale.setScalar(Math.max(0.001, 1 - Math.max(u.respawn, 0)));
         if (u.respawn <= 0) { u.respawn = 0; c.scale.setScalar(1); }
       }
-      const a = u.a + t * 0.5 * motion;
+      const a = u.a + t * 0.35 * motion;
       c.position.set(Math.cos(a) * u.r, u.y + Math.sin(t * 2 + i) * 0.1, Math.sin(a) * u.r * 0.7);
       c.rotation.y = t * 3 * motion + i;
     });
