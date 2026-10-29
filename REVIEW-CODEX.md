@@ -40,3 +40,9 @@
 - `git diff --check` passed.
 - Desktop rendering and the boot accessibility tree were checked in Chrome against the local server.
 - Automated 375px Chromium rendering was attempted with Chrome, Edge, and Brave. All three headless processes terminated in this Windows environment because their GPU process was unusable, so the 375px conclusion is source-audited rather than screenshot-verified. `tests/layout-harness.html` remains as a small repeatable width/scroll check for a working browser runner.
+
+## Round 2
+
+- Rebuilt `js/scene.js` around a measured, scroll-driven road journey. The hero cabinet now recedes down the road, six alternating roadside landmarks arrive with their matching content sections, terrain travel reverses with scroll direction, and Konami palette changes reach every new landmark and sign.
+- Section offsets are cached on resize and through a frame-throttled `ResizeObserver`. Active scroll and damping render every frame, settled content views return to roughly 30 fps, reduced motion removes automatic movement, and the CSS world dim now tops out at `0.6`.
+- `node --check js/scene.js` and `git diff --check -- js/scene.js` passed. The local server returned the module with HTTP 200. The browser automation host was unavailable and headless Edge did not produce a render, so WebGL appearance and browser-console output could not be verified in this environment.

@@ -185,6 +185,7 @@ export const levels = [
   },
   {
     id: 'media',
+    shots: [{ src: 'assets/shots/media.webp', alt: 'Duplicate and Transfer Manager overview screen with navigation for disk audit, duplicates, imports and quarantine' }],
     world: '3-1',
     name: 'Duplicate & Transfer Manager',
     subtitle: 'Windows desktop utility',

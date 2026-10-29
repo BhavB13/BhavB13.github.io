@@ -303,6 +303,221 @@ function makeCoins(n) {
   return coins;
 }
 
+// --- Roadside level landmarks ------------------------------------------------
+
+const LANDMARK_DEFS = [
+  { id: 'stats', title: 'CHARACTER SELECT', side: -1, kind: 'gate' },
+  { id: 'inventory', title: 'INVENTORY', side: 1, kind: 'chest' },
+  { id: 'quests', title: 'QUEST LOG', side: -1, kind: 'map' },
+  { id: 'levels', title: 'LEVEL SELECT', side: 1, kind: 'carts' },
+  { id: 'bonus', title: 'BONUS STAGE', side: -1, kind: 'coin' },
+  { id: 'continue', title: 'CONTINUE?', side: 1, kind: 'billboard' },
+];
+
+function cssHex(value) {
+  return `#${value.toString(16).padStart(6, '0')}`;
+}
+
+function makeLandmarkMaterials() {
+  return {
+    fill: new THREE.MeshStandardMaterial({ color: 0x141229, roughness: 0.7, metalness: 0.15 }),
+    edge: new THREE.LineBasicMaterial({ color: PALETTES.normal.edge }),
+    accent: new THREE.MeshBasicMaterial({ color: PALETTES.normal.line }),
+    hot: new THREE.MeshBasicMaterial({ color: PALETTES.normal.sunBottom }),
+    gold: new THREE.MeshStandardMaterial({
+      color: PALETTES.normal.sunTop,
+      emissive: PALETTES.normal.sunTop,
+      emissiveIntensity: 0.35,
+      roughness: 0.45,
+      metalness: 0.35,
+    }),
+  };
+}
+
+function outlined(parent, geometry, material, edgeMaterial) {
+  const assembly = new THREE.Group();
+  const mesh = new THREE.Mesh(geometry, material);
+  const edges = new THREE.LineSegments(new THREE.EdgesGeometry(geometry, 18), edgeMaterial);
+  assembly.add(mesh, edges);
+  parent.add(assembly);
+  return assembly;
+}
+
+function drawLandmarkSign(sign, title, paletteName) {
+  const p = PALETTES[paletteName];
+  const { c, g, tex } = sign;
+  g.fillStyle = cssHex(p.fog);
+  g.fillRect(0, 0, c.width, c.height);
+  g.strokeStyle = cssHex(p.edge);
+  g.lineWidth = 8;
+  g.strokeRect(6, 6, c.width - 12, c.height - 12);
+  g.fillStyle = cssHex(p.sunTop);
+  g.font = `bold ${title.length > 13 ? 29 : 36}px monospace`;
+  g.textAlign = 'center';
+  g.textBaseline = 'middle';
+  g.fillText(title, c.width / 2, c.height / 2 + 2);
+  tex.needsUpdate = true;
+}
+
+function addLandmarkSign(group, title, signs, y = 4.35) {
+  const sign = canvasTexture(512, 128);
+  drawLandmarkSign(sign, title, 'normal');
+  const mesh = new THREE.Mesh(
+    new THREE.PlaneGeometry(4.8, 1.2),
+    new THREE.MeshBasicMaterial({ map: sign.tex, transparent: true }),
+  );
+  mesh.position.set(0, y, 0.08);
+  group.add(mesh);
+  signs.push({ ...sign, title });
+  return mesh;
+}
+
+function makeGate(group, mats, signs, title) {
+  outlined(group, new THREE.BoxGeometry(0.55, 4.2, 0.55), mats.fill, mats.edge).position.set(-2.05, 2.1, 0);
+  outlined(group, new THREE.BoxGeometry(0.55, 4.2, 0.55), mats.fill, mats.edge).position.set(2.05, 2.1, 0);
+  outlined(group, new THREE.BoxGeometry(4.65, 0.55, 0.55), mats.fill, mats.edge).position.set(0, 4.05, 0);
+  const gem = outlined(group, new THREE.OctahedronGeometry(0.48, 0), mats.hot, mats.edge);
+  gem.position.set(0, 2.5, 0);
+  group.userData.animated = gem;
+  addLandmarkSign(group, title, signs, 4.85);
+}
+
+function makeChest(group, mats, signs, title) {
+  const chest = new THREE.Group();
+  outlined(chest, new THREE.BoxGeometry(3.2, 1.45, 1.65), mats.fill, mats.edge).position.y = 0.7;
+  const lid = outlined(chest, new THREE.BoxGeometry(3.25, 0.65, 1.7), mats.gold, mats.edge);
+  lid.position.set(0, 1.72, -0.18);
+  lid.rotation.x = -0.2;
+  const band = new THREE.Mesh(new THREE.BoxGeometry(0.32, 2.15, 1.78), mats.hot);
+  band.position.y = 0.95;
+  chest.add(band);
+  const lock = outlined(chest, new THREE.BoxGeometry(0.55, 0.65, 0.18), mats.gold, mats.edge);
+  lock.position.set(0, 0.95, 0.92);
+  chest.position.y = 1.0;
+  group.add(chest);
+  group.userData.animated = chest;
+  addLandmarkSign(group, title, signs, 4.25);
+}
+
+function makeMapPylon(group, mats, signs, title) {
+  outlined(group, new THREE.CylinderGeometry(0.75, 1.05, 0.5, 6), mats.fill, mats.edge).position.y = 0.25;
+  outlined(group, new THREE.BoxGeometry(0.38, 3.6, 0.38), mats.fill, mats.edge).position.y = 2.1;
+  const map = new THREE.Group();
+  outlined(map, new THREE.BoxGeometry(2.8, 2.25, 0.18), mats.fill, mats.edge);
+  const route = new THREE.Line(
+    new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-0.9, -0.55, 0.11),
+      new THREE.Vector3(-0.25, 0.55, 0.11),
+      new THREE.Vector3(0.3, -0.1, 0.11),
+      new THREE.Vector3(0.95, 0.6, 0.11),
+    ]),
+    mats.edge,
+  );
+  map.add(route);
+  map.position.set(0, 2.55, 0.08);
+  group.add(map);
+  group.userData.animated = map;
+  addLandmarkSign(group, title, signs, 4.45);
+}
+
+function makeCartridges(group, mats, signs, title) {
+  const row = new THREE.Group();
+  for (let i = 0; i < 3; i++) {
+    const cart = new THREE.Group();
+    outlined(cart, new THREE.BoxGeometry(1.25, 2.35, 0.55), mats.fill, mats.edge);
+    const label = new THREE.Mesh(new THREE.PlaneGeometry(0.82, 0.72), i === 1 ? mats.hot : mats.accent);
+    label.position.set(0, 0.35, 0.286);
+    cart.add(label);
+    cart.position.set((i - 1) * 1.45, 1.5 + (i === 1 ? 0.45 : 0), i === 1 ? -0.2 : 0);
+    cart.rotation.z = (i - 1) * -0.08;
+    row.add(cart);
+  }
+  group.add(row);
+  group.userData.animated = row;
+  addLandmarkSign(group, title, signs, 4.35);
+}
+
+function makeBonusCoin(group, mats, signs, title, lowPower) {
+  const coin = new THREE.Group();
+  const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.55, 1.55, 0.34, lowPower ? 16 : 28), mats.gold);
+  disc.rotation.x = Math.PI / 2;
+  coin.add(disc);
+  const rim = new THREE.LineSegments(new THREE.EdgesGeometry(disc.geometry), mats.edge);
+  rim.rotation.copy(disc.rotation);
+  coin.add(rim);
+  const b = outlined(coin, new THREE.BoxGeometry(0.22, 1.45, 0.16), mats.fill, mats.edge);
+  b.position.z = 0.19;
+  const bTop = new THREE.Mesh(new THREE.BoxGeometry(0.72, 0.22, 0.16), mats.fill);
+  bTop.position.set(0.2, 0.62, 0.19);
+  coin.add(bTop);
+  coin.position.y = 2.15;
+  group.add(coin);
+  group.userData.animated = coin;
+  addLandmarkSign(group, title, signs, 4.45);
+}
+
+function makeBillboard(group, mats, signs, title) {
+  outlined(group, new THREE.BoxGeometry(0.28, 3.7, 0.28), mats.fill, mats.edge).position.set(-1.65, 1.85, 0);
+  outlined(group, new THREE.BoxGeometry(0.28, 3.7, 0.28), mats.fill, mats.edge).position.set(1.65, 1.85, 0);
+  outlined(group, new THREE.BoxGeometry(4.5, 2.65, 0.28), mats.fill, mats.edge).position.set(0, 3.4, 0);
+  const digit = canvasTexture(128, 128);
+  digit.g.fillStyle = '#0b0a16';
+  digit.g.fillRect(0, 0, 128, 128);
+  digit.g.fillStyle = '#ff4f9a';
+  digit.g.font = 'bold 104px monospace';
+  digit.g.textAlign = 'center';
+  digit.g.textBaseline = 'middle';
+  digit.g.fillText('9', 64, 68);
+  digit.tex.needsUpdate = true;
+  const digitMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.55, 1.55), new THREE.MeshBasicMaterial({ map: digit.tex }));
+  digitMesh.position.set(0, 3.18, 0.16);
+  group.add(digitMesh);
+  signs.push({ ...digit, title: '9', digit: true });
+  addLandmarkSign(group, title, signs, 5.05);
+}
+
+function makeLandmarks(lowPower, mats) {
+  const root = new THREE.Group();
+  const signs = [];
+  const records = LANDMARK_DEFS.map((def) => {
+    const group = new THREE.Group();
+    if (def.kind === 'gate') makeGate(group, mats, signs, def.title);
+    else if (def.kind === 'chest') makeChest(group, mats, signs, def.title);
+    else if (def.kind === 'map') makeMapPylon(group, mats, signs, def.title);
+    else if (def.kind === 'carts') makeCartridges(group, mats, signs, def.title);
+    else if (def.kind === 'coin') makeBonusCoin(group, mats, signs, def.title, lowPower);
+    else makeBillboard(group, mats, signs, def.title);
+    group.visible = false;
+    root.add(group);
+    return { ...def, group, travel: 0 };
+  });
+  return { root, records, signs };
+}
+
+function updateLandmarkPalette(mats, signs, name) {
+  const p = PALETTES[name];
+  mats.fill.color.set(name === 'konami' ? 0x10261b : 0x141229);
+  mats.edge.color.set(p.edge);
+  mats.accent.color.set(p.line);
+  mats.hot.color.set(p.sunBottom);
+  mats.gold.color.set(p.sunTop);
+  mats.gold.emissive.set(p.sunTop);
+  for (const sign of signs) {
+    if (sign.digit) {
+      sign.g.fillStyle = cssHex(p.fog);
+      sign.g.fillRect(0, 0, sign.c.width, sign.c.height);
+      sign.g.fillStyle = cssHex(p.sunBottom);
+      sign.g.font = 'bold 104px monospace';
+      sign.g.textAlign = 'center';
+      sign.g.textBaseline = 'middle';
+      sign.g.fillText('9', 64, 68);
+      sign.tex.needsUpdate = true;
+    } else {
+      drawLandmarkSign(sign, sign.title, name);
+    }
+  }
+}
+
 // --- Main --------------------------------------------------------------------
 
 export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } = {}) {
@@ -346,14 +561,51 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   coins.forEach((c) => rig.add(c));
   scene.add(rig);
 
+  const landmarkMats = makeLandmarkMaterials();
+  const landmarks = makeLandmarks(lowPower, landmarkMats);
+  scene.add(landmarks.root);
+
+  const sectionEls = Array.from(document.querySelectorAll('[data-section]'));
+  const sectionOffsets = new Float32Array(sectionEls.length);
+  const sectionIndexes = new Map(sectionEls.map((el, i) => [el.id, i]));
+  let scrollRange = 1;
+  let journeyLength = 140;
+  let heroEnd = window.innerHeight;
+  let measureFrame = 0;
+
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), lowPower ? 0.5 : 0.65, 0.45, 0.62);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 
-  // layout: cabinet sits right of the copy on wide screens, centred lower on tall ones
+  // Layout is remeasured on viewport and document-size changes. Scroll itself is
+  // sampled in frame(), so no scroll listener is needed.
   let portrait = false;
+  function measureSections() {
+    measureFrame = 0;
+    const pageY = window.scrollY;
+    const doc = document.documentElement;
+    scrollRange = Math.max(doc.scrollHeight - window.innerHeight, 1);
+    journeyLength = portrait ? 108 : 148;
+    for (let i = 0; i < sectionEls.length; i++) {
+      sectionOffsets[i] = sectionEls[i].getBoundingClientRect().top + pageY;
+    }
+    const statsIndex = sectionIndexes.get('stats');
+    heroEnd = statsIndex == null ? window.innerHeight : Math.max(sectionOffsets[statsIndex] - 1, 1);
+    for (const landmark of landmarks.records) {
+      const index = sectionIndexes.get(landmark.id);
+      const sectionY = index == null ? 0 : sectionOffsets[index];
+      const arrivalY = Math.max(0, sectionY - window.innerHeight * 0.22);
+      landmark.travel = (arrivalY / scrollRange) * journeyLength;
+      landmark.group.position.x = landmark.side * (portrait ? 3.75 : 7.4);
+      landmark.group.scale.setScalar(portrait ? 0.62 : 1);
+      landmark.group.rotation.y = landmark.side * (portrait ? -0.08 : -0.14);
+    }
+  }
+  function scheduleMeasure() {
+    if (!measureFrame) measureFrame = requestAnimationFrame(measureSections);
+  }
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
     renderer.setSize(w, h, false);
@@ -363,9 +615,13 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     portrait = w / h < 0.9;
     camera.fov = portrait ? 70 : 55;
     camera.updateProjectionMatrix();
+    scheduleMeasure();
   }
   resize();
+  measureSections();
   window.addEventListener('resize', resize);
+  const sizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(scheduleMeasure);
+  sizeObserver?.observe(document.body);
 
   // input
   const ray = new THREE.Raycaster();
@@ -382,6 +638,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     return coinHitboxes;
   };
   const pick = (x, y) => {
+    if (window.scrollY >= heroEnd) return null;
     ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     intersections.length = 0;
@@ -393,7 +650,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   const onMove = (e) => {
     target.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
     if (e.pointerType !== 'mouse') return;
-    const over = window.scrollY < window.innerHeight && !e.target.closest?.('a, button, dialog') && !!pick(e.clientX, e.clientY);
+    const over = window.scrollY < heroEnd && !e.target.closest?.('a, button, dialog') && !!pick(e.clientX, e.clientY);
     if (over !== hovering) { hovering = over; document.body.style.cursor = over ? 'pointer' : ''; }
   };
   window.addEventListener('pointermove', onMove, { passive: true });
@@ -416,12 +673,16 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   let hiScore = 0;
   let running = true;
   let visible = true;
-  let last = performance.now();
+  let lastRender = performance.now();
+  let lastScroll = window.scrollY;
+  let lastScrollChange = lastRender;
   let t = 0;
-  let offset = 0;
+  let scrollTravel = (Math.max(0, window.scrollY) / scrollRange) * journeyLength;
+  let scrollTarget = scrollTravel;
+  let ambientOffset = 0;
   let lastDim = -1;
   let lastScreenFrame = -1;
-  let skip = false;
+  const cameraAim = new THREE.Vector3();
 
   function setPalette(name) {
     palette = name;
@@ -431,6 +692,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     sun.material.uniforms.uTop.value.set(p.sunTop);
     sun.material.uniforms.uBottom.value.set(p.sunBottom);
     cab.edges.material.color.set(p.edge);
+    updateLandmarkPalette(landmarkMats, landmarks.signs, name);
     scene.background.set(p.fog);
     scene.fog.color.set(p.fog);
     speed = name === 'konami' ? 3 : 1;
@@ -439,34 +701,44 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   function frame(now) {
     if (!running) return;
     requestAnimationFrame(frame);
-    if (!visible) { last = now; return; }
-    // once the hero is scrolled away the world is only a dimmed backdrop: ~30fps is plenty
-    skip = !skip;
-    if (skip && window.scrollY > window.innerHeight * 1.2) return;
-    const dt = Math.min((now - last) / 1000, 0.05);
-    last = now;
+    const rawScroll = THREE.MathUtils.clamp(window.scrollY, 0, scrollRange);
+    if (Math.abs(rawScroll - lastScroll) > 0.25) {
+      lastScroll = rawScroll;
+      lastScrollChange = now;
+    }
+    scrollTarget = (rawScroll / scrollRange) * journeyLength;
+    const travelSettled = Math.abs(scrollTarget - scrollTravel) < 0.015;
+    const journeyActive = now - lastScrollChange < 180 || !travelSettled;
+    if (!visible) { lastRender = now; return; }
+    // Keep full frame rate during scroll and damping. Once settled behind the
+    // content, the scene returns to a roughly 30 fps backdrop cadence.
+    if (rawScroll > window.innerHeight * 1.2 && !journeyActive && now - lastRender < 32) return;
+    const dt = Math.min((now - lastRender) / 1000, 0.05);
+    lastRender = now;
     t += dt;
 
-    // scroll progress through the first screen drives a camera fly-forward
-    const vh = window.innerHeight;
-    const prog = Math.min(window.scrollY / vh, 1.6);
-    boost *= 0.94;
+    const heroProgress = THREE.MathUtils.clamp(rawScroll / heroEnd, 0, 1);
+    const heroEase = heroProgress * heroProgress * (3 - 2 * heroProgress);
+    const damping = motionReduced ? 1 : 1 - Math.exp(-dt * 7.5);
+    scrollTravel += (scrollTarget - scrollTravel) * damping;
+    if (Math.abs(scrollTarget - scrollTravel) < 0.001) scrollTravel = scrollTarget;
+    boost *= Math.exp(-dt * 3.7);
     const motion = motionReduced ? 0 : 1;
-    offset += dt * (4 + boost * 10) * speed * motion;
-    terrain.material.uniforms.uOffset.value = offset;
+    ambientOffset += dt * (3.2 + boost * 9) * speed * motion;
+    terrain.material.uniforms.uOffset.value = scrollTravel + ambientOffset;
     sun.material.uniforms.uTime.value = t * motion;
 
-    mouse.lerp(target, 0.06);
+    mouse.lerp(target, motionReduced ? 1 : 1 - Math.exp(-dt * 5));
 
     const baseX = portrait ? 0 : 2.7;
     const baseY = portrait ? 0.25 : -0.1;
     rig.position.set(
-      baseX + prog * (portrait ? 0 : 3.5),
-      baseY + Math.sin(t * 1.4) * 0.12 * motion - prog * 1.2,
-      portrait ? 3.6 : 0.5,
+      baseX,
+      baseY + Math.sin(t * 1.4) * 0.12 * motion,
+      (portrait ? 3.6 : 0.5) - heroEase * (portrait ? 34 : 42),
     );
-    rig.scale.setScalar(portrait ? 0.6 : 1);
-    rig.rotation.y = -0.45 + mouse.x * 0.5 + prog * 1.2;
+    rig.scale.setScalar((portrait ? 0.6 : 1) * (1 - heroEase * 0.34));
+    rig.rotation.y = -0.45 + mouse.x * 0.5 + heroEase * 0.25;
     rig.rotation.x = -mouse.y * 0.12;
     cab.joystick.position.x = -0.3 + mouse.x * 0.04;
     cab.ring.material.opacity = motionReduced ? 0.55 : 0.45 + Math.sin(t * 3) * 0.2;
@@ -491,9 +763,30 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
       c.rotation.y = t * 3 * motion + i;
     });
 
+    const landmarkPassZ = portrait ? -6 : -1;
+    for (let i = 0; i < landmarks.records.length; i++) {
+      const landmark = landmarks.records[i];
+      const z = landmarkPassZ + scrollTravel - landmark.travel;
+      landmark.group.visible = z > -150 && z < 20;
+      landmark.group.position.z = z;
+      landmark.group.position.y = Math.sin(t * 0.9 + i) * 0.1 * motion;
+      const animated = landmark.group.userData.animated;
+      if (animated) {
+        if (landmark.kind === 'map') animated.rotation.y = Math.sin(t * 0.55) * 0.12 * motion;
+        else if (landmark.kind === 'carts') animated.rotation.z = Math.sin(t * 0.7) * 0.025 * motion;
+        else animated.rotation.y = t * (landmark.kind === 'coin' ? 1.15 : 0.42) * motion;
+      }
+    }
+
+    if (rawScroll >= heroEnd && hovering) {
+      hovering = false;
+      document.body.style.cursor = '';
+    }
+
     camera.position.x = mouse.x * 0.6;
-    camera.position.y = 2.4 + mouse.y * 0.3 - prog * 0.6;
-    camera.lookAt(portrait ? 0 : 0.6, (portrait ? 2.7 : 1.6) - prog * 0.8, 0);
+    camera.position.y = 2.4 + mouse.y * 0.3;
+    cameraAim.set(portrait ? 0 : 0.6, portrait ? 2.35 : 1.6, -1.5);
+    camera.lookAt(cameraAim);
 
     stars.rotation.y = motionReduced ? 0 : t * 0.004;
 
@@ -504,7 +797,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     }
 
     // dim the world as content scrolls over it (CSS reads --dim)
-    const dim = Math.min(prog / 0.9, 1);
+    const dim = Math.min(heroProgress / 0.72, 1) * 0.6;
     if (Math.abs(dim - lastDim) > 0.01) {
       document.documentElement.style.setProperty('--dim', dim.toFixed(2));
       lastDim = dim;
@@ -514,8 +807,11 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   }
   requestAnimationFrame(frame);
 
-  const onVis = () => { visible = !document.hidden; };
-  const onMotion = (event) => { motionReduced = event.matches; };
+  const onVis = () => {
+    visible = !document.hidden;
+    if (visible) lastRender = performance.now();
+  };
+  const onMotion = (event) => { motionReduced = reducedMotion || event.matches; };
   document.addEventListener('visibilitychange', onVis);
   motionMedia.addEventListener?.('change', onMotion);
 
@@ -531,6 +827,8 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
       window.removeEventListener('pointermove', onMove);
       document.removeEventListener('visibilitychange', onVis);
       motionMedia.removeEventListener?.('change', onMotion);
+      sizeObserver?.disconnect();
+      if (measureFrame) cancelAnimationFrame(measureFrame);
       document.body.style.cursor = '';
       renderer.dispose();
     },
