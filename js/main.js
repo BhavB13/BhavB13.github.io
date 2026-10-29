@@ -382,6 +382,11 @@ function renderLevels() {
     $('.cart-world', b).textContent = `W ${lv.world}`;
     $('.cart-name', b).textContent = lv.name;
     $('.cart-sub', b).textContent = lv.subtitle;
+    if (lv.shots?.length) {
+      // the real screenshot glows through the label on hover, like an attract screen
+      const shot = Object.assign(document.createElement('img'), { className: 'cart-shot', alt: '', loading: 'lazy', src: lv.shots[0].src });
+      $('.cart-label', b).prepend(shot);
+    }
     const art = CART_ART[lv.id];
     const cv = $('.cart-art', b);
     const sc = Math.floor(100 / Math.max(art.length, art[0].length));
@@ -416,6 +421,34 @@ function updatePlayed() {
   $('#levels-played').textContent = state.played.size;
 }
 
+// Real screenshots, shown on a little CRT monitor inside the level details.
+function renderShots(lv) {
+  const fig = $('.lm-shots', modal);
+  const shots = lv.shots || [];
+  fig.hidden = shots.length === 0;
+  if (!shots.length) return;
+  const img = $('.lm-shot', fig);
+  const thumbs = $('.lm-thumbs', fig);
+  const show = (i) => {
+    img.src = shots[i].src;
+    img.alt = shots[i].alt;
+    $$('button', thumbs).forEach((b, k) => b.setAttribute('aria-pressed', String(k === i)));
+  };
+  thumbs.innerHTML = '';
+  thumbs.hidden = shots.length < 2;
+  shots.forEach((s, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'lm-thumb';
+    b.setAttribute('aria-label', `Screenshot ${i + 1} of ${shots.length}`);
+    b.innerHTML = '<img alt="" loading="lazy">';
+    b.firstChild.src = s.src;
+    b.addEventListener('click', () => { show(i); sfx.play('select'); });
+    thumbs.appendChild(b);
+  });
+  show(0);
+}
+
 function openLevel(lv, cartEl) {
   if (levelOpening || modal.open) return;
   levelOpening = true;
@@ -427,6 +460,7 @@ function openLevel(lv, cartEl) {
     $('.lm-name', modal).textContent = lv.name;
     $('.lm-sub', modal).textContent = lv.subtitle;
     $('.lm-blurb', modal).textContent = lv.blurb;
+    renderShots(lv);
     const det = $('.lm-details', modal);
     det.innerHTML = '';
     lv.details.forEach((d) => det.appendChild(Object.assign(document.createElement('li'), { textContent: d })));

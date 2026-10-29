@@ -113,6 +113,7 @@ export const quests = [
 export const levels = [
   {
     id: 'wgdss',
+    shots: [{ src: 'assets/shots/wgdss.webp', alt: 'WGDSS control-room dashboard: weather radar over Trinidad and Tobago, demand and generation tiles, and a demand forecast chart' }],
     world: '1-1',
     name: 'WGDSS',
     subtitle: 'Grid decision support for T&TEC',
@@ -130,6 +131,7 @@ export const levels = [
   },
   {
     id: 'gridbridge',
+    shots: [{ src: 'assets/shots/gridbridge.webp', alt: 'GridBridge dashboard: map of projects from two utilities with a ranked list of coordination opportunities' }],
     world: '1-2',
     name: 'GridBridge',
     subtitle: 'ShellHacks 2026, Sperry Tech "Gridlock"',
@@ -148,6 +150,7 @@ export const levels = [
   },
   {
     id: 'agentproof',
+    shots: [{ src: 'assets/shots/agentproof.webp', alt: 'agentproof leaderboard ranking Claude Code models by resolve rate, score, tampering and cost' }, { src: 'assets/shots/agentproof-result.webp', alt: 'agentproof task result page with baseline proof and hidden test evidence' }],
     world: '2-1',
     name: 'agentproof',
     subtitle: 'Did the AI agent actually fix it?',
@@ -214,6 +217,7 @@ export const levels = [
   },
   {
     id: 'nailcove',
+    shots: [{ src: 'assets/shots/nailcove.webp', alt: 'Nail Cove TT homepage with a photo carousel of recent nail sets' }],
     world: '4-1',
     name: 'Nail Cove TT',
     subtitle: 'Small-business site + booking',
