@@ -1,0 +1,267 @@
+// All site content lives here. Edit this file to update the portfolio.
+
+export const player = {
+  name: 'Bhavesh Basdeo',
+  handle: 'BHAV',
+  title: 'Software Engineer',
+  tagline: 'I build backend systems, data tools and AI agents that people can actually trust.',
+  email: 'bhaveshbasdeo@gmail.com',
+  github: 'https://github.com/BhavB13',
+  linkedin: 'https://www.linkedin.com/in/bhavesh-basdeo',
+  location: 'Miami, FL',
+  origin: 'Trinidad and Tobago',
+};
+
+// "Player stats" card. Real facts only.
+export const stats = [
+  { label: 'Class', value: 'CS Student' },
+  { label: 'Guild', value: 'Florida International University' },
+  { label: 'Level up', value: 'B.S. Computer Science, Dec 2026' },
+  { label: 'GPA', value: '3.92' },
+  { label: 'Spawn point', value: 'Trinidad and Tobago' },
+  { label: 'Base', value: 'Miami, FL' },
+];
+
+export const about = [
+  'I grew up in Trinidad and Tobago and came to Miami to study computer science at FIU.',
+  'This summer I built a decision-support system for the national power utility back home. I like problems where the data is messy, the stakes are real, and the software has to explain itself.',
+  'Lately I spend a lot of time making AI coding agents prove their work instead of just claiming it.',
+];
+
+// Inventory slots. `lvl` is a rough 1-5 comfort rating used only for pixel pips.
+export const inventory = [
+  {
+    group: 'Languages',
+    items: [
+      { name: 'Python', glyph: 'PY', lvl: 5 },
+      { name: 'TypeScript', glyph: 'TS', lvl: 4 },
+      { name: 'JavaScript', glyph: 'JS', lvl: 4 },
+      { name: 'Java', glyph: 'JV', lvl: 4 },
+      { name: 'SQL', glyph: 'SQL', lvl: 4 },
+      { name: 'C', glyph: 'C', lvl: 3 },
+      { name: 'Kotlin', glyph: 'KT', lvl: 3 },
+      { name: 'HTML / CSS', glyph: '</>', lvl: 4 },
+    ],
+  },
+  {
+    group: 'Frameworks',
+    items: [
+      { name: 'FastAPI', glyph: 'API', lvl: 5 },
+      { name: 'React', glyph: 'RE', lvl: 4 },
+      { name: 'Next.js', glyph: 'NX', lvl: 3 },
+      { name: 'scikit-learn', glyph: 'SK', lvl: 4 },
+      { name: 'Pydantic', glyph: 'PD', lvl: 4 },
+      { name: 'SQLAlchemy', glyph: 'SA', lvl: 3 },
+      { name: 'PySide6', glyph: 'QT', lvl: 3 },
+      { name: 'Jetpack Compose', glyph: 'JC', lvl: 3 },
+    ],
+  },
+  {
+    group: 'Tools',
+    items: [
+      { name: 'Git + GitHub Actions', glyph: 'GIT', lvl: 5 },
+      { name: 'PostgreSQL', glyph: 'PG', lvl: 4 },
+      { name: 'Linux', glyph: 'LNX', lvl: 4 },
+      { name: 'AWS', glyph: 'AWS', lvl: 3 },
+      { name: 'Cloudflare', glyph: 'CF', lvl: 3 },
+      { name: 'Google Maps API', glyph: 'MAP', lvl: 4 },
+      { name: 'Claude Code + Codex', glyph: 'AI', lvl: 5 },
+      { name: 'Tailscale', glyph: 'VPN', lvl: 3 },
+    ],
+  },
+];
+
+// Quest log (experience + education). Newest first.
+export const quests = [
+  {
+    status: 'In progress',
+    title: 'B.S. Computer Science',
+    org: 'Florida International University',
+    when: '2023 - Dec 2026',
+    loot: ['GPA 3.92', 'AWS Developer Associate in progress'],
+  },
+  {
+    status: 'Complete',
+    title: 'Software Engineering Intern',
+    org: 'Trinidad and Tobago Electricity Commission (T&TEC)',
+    when: 'Jun - Aug 2026',
+    loot: [
+      'Built WGDSS, a generation-capacity decision-support system for the national control room',
+      'FastAPI REST API with 44 endpoints reconciling 4 weather providers with failover',
+      'Cut 6-hour demand forecast error 36% (MAE 30.75 to 19.67 MW) with scikit-learn',
+      'Automated SCADA ingestion with hashing, provenance and deduplication',
+      'Shipped a React + TypeScript dashboard with 8 operator workspaces',
+    ],
+  },
+  {
+    status: 'Active',
+    title: 'Global Resident Care Assistant',
+    org: 'FIU Housing',
+    when: '2025 - now',
+    loot: ['Support housing operations for 500+ international residents'],
+  },
+  {
+    status: 'Complete',
+    title: 'Resident Assistant',
+    org: 'FIU Housing',
+    when: '2024 - 2025',
+    loot: ['Supported a community of 1,000+ residents', 'Ran events that lifted engagement 25%'],
+  },
+];
+
+// Level select. `color` tints the cartridge label; `world` is the cartridge badge.
+export const levels = [
+  {
+    id: 'wgdss',
+    world: '1-1',
+    name: 'WGDSS',
+    subtitle: 'Grid decision support for T&TEC',
+    color: '#ffc93c',
+    blurb: 'A read-only advisory system for the national power control room: weather, demand forecasts and grid evidence in one place, with an operator always in charge.',
+    details: [
+      'FastAPI backend with 44 endpoints reconciling 4 weather providers, with failover.',
+      'scikit-learn demand forecasting: 6-hour MAE down 36%, from 30.75 to 19.67 MW.',
+      'SCADA ingestion with hashing, provenance and deduplication.',
+      'React + TypeScript dashboard with 8 operator workspaces.',
+    ],
+    stack: ['Python', 'FastAPI', 'scikit-learn', 'React', 'TypeScript', 'PostgreSQL'],
+    links: [{ label: 'Source', href: 'https://github.com/BhavB13/TTEC-WGDSS' }],
+    boss: 'Four weather APIs that never agree',
+  },
+  {
+    id: 'gridbridge',
+    world: '1-2',
+    name: 'GridBridge',
+    subtitle: 'ShellHacks 2026, Sperry Tech "Gridlock"',
+    color: '#3cf0ff',
+    blurb: 'Finds where different utilities plan to dig up the same ground, then ranks those overlaps as explainable coordination opportunities on a live map.',
+    details: [
+      'Closest-geometry distance analysis with proximity tiers, not centre points.',
+      'Coordination Score (geography, timeline, compatibility) with a separate Data Confidence.',
+      'Scenario Lab: change an assumption and the backend recalculates the impact range.',
+      'Demo: 10 public projects, 25 cross-utility pairs, 6 opportunities.',
+    ],
+    stack: ['Python', 'FastAPI', 'React', 'Google Maps'],
+    links: [],
+    note: 'Private hackathon repo. Demo on request.',
+    boss: 'Two utilities, one street, zero coordination',
+  },
+  {
+    id: 'agentproof',
+    world: '2-1',
+    name: 'agentproof',
+    subtitle: 'Did the AI agent actually fix it?',
+    color: '#7dff8a',
+    blurb: 'A benchmark harness for AI coding agents like Claude Code and Codex. It judges fixes on evidence (hidden tests, baseline proof, tamper checks) and never on the agent\'s own summary.',
+    details: [
+      'Proves each task first: hidden tests fail before the fix and pass with the reference fix.',
+      'Runs the agent in an isolated git copy; hidden tests are never on disk.',
+      'Flags edits to tests or pytest config as tampering and scores them zero.',
+      'Leaderboard dashboard with per-task evidence and diffs.',
+    ],
+    stack: ['Python', 'pytest', 'git', 'Claude Code', 'Codex'],
+    links: [],
+    note: 'Source available on request.',
+    boss: '"Fixed. All tests pass." (they did not)',
+  },
+  {
+    id: 'storm',
+    world: '2-2',
+    name: 'Google Storm',
+    subtitle: 'ShellHacks 2025',
+    color: '#ff4f9a',
+    blurb: 'A community resource navigator for hurricane season in Miami. A bilingual Gemini chatbot plus a live map of shelters, food banks and free clinics.',
+    details: [
+      'Gemini-powered chat in English and Spanish.',
+      'Google Maps view of community resources with an emergency mode.',
+      'NGOs can add and update resources, with AI moderation.',
+    ],
+    stack: ['Gemini', 'Google Maps', 'JavaScript'],
+    links: [{ label: 'Source', href: 'https://github.com/BhavB13/Google-Storm--ShellHacks' }],
+    boss: 'Category 4, arriving Thursday',
+  },
+  {
+    id: 'media',
+    world: '3-1',
+    name: 'Duplicate & Transfer Manager',
+    subtitle: 'Windows desktop utility',
+    color: '#ffc93c',
+    blurb: 'Finds duplicate files and safely imports photos and videos from drives and Android phones, without ever deleting your originals by surprise.',
+    details: [
+      'PySide6 app with system, light and dark themes.',
+      'Imports from local folders, removable drives and Android over ADB.',
+      'Framework-neutral service layer with 340+ automated tests.',
+    ],
+    stack: ['Python', 'PySide6', 'ADB', 'Kotlin'],
+    links: [{ label: 'Source', href: 'https://github.com/BhavB13/Windows-Media-Organizer' }],
+    boss: 'IMG_0001 (3).jpg',
+  },
+  {
+    id: 'faithquote',
+    world: '3-2',
+    name: 'FaithQuote',
+    subtitle: 'Offline-first Android app',
+    color: '#3cf0ff',
+    blurb: 'Religious, spiritual and motivational quotes with home-screen widgets and a daily reminder. No account, no network calls, no analytics.',
+    details: [
+      'Kotlin + Jetpack Compose + Material 3.',
+      'Glance home-screen widgets.',
+      'Entire library ships inside the APK.',
+    ],
+    stack: ['Kotlin', 'Jetpack Compose', 'Glance'],
+    links: [],
+    boss: 'Android widget lifecycle',
+  },
+  {
+    id: 'nailcove',
+    world: '4-1',
+    name: 'Nail Cove TT',
+    subtitle: 'Small-business site + booking',
+    color: '#ff4f9a',
+    blurb: 'Website and appointment-request system for a mobile nail technician in Central Trinidad, with a protected admin area and gallery management.',
+    details: [
+      'Astro site on Cloudflare Pages Functions.',
+      'D1 database and R2 storage foundations.',
+      'Fail-closed notification pipeline and release gates.',
+    ],
+    stack: ['Astro', 'TypeScript', 'Cloudflare'],
+    links: [],
+    note: 'Client project. Launching soon.',
+    boss: 'Production config',
+  },
+  {
+    id: 'football',
+    world: '4-2',
+    name: 'Football Edge Engine',
+    subtitle: 'ML match forecasting',
+    color: '#7dff8a',
+    blurb: 'Estimates calibrated football match probabilities and compares them to market odds. Read-only decision support with provenance on every data source.',
+    details: [
+      'Provenance-rich ingestion of public historical data.',
+      'Focus on calibration, not just accuracy.',
+      'Never places wagers. Analysis only.',
+    ],
+    stack: ['Python', 'pandas', 'scikit-learn'],
+    links: [{ label: 'Source', href: 'https://github.com/BhavB13/Football-Edge-Engine' }],
+    boss: 'Overfitting',
+  },
+];
+
+export const achievements = {
+  start: 'Pressed Start',
+  stats: 'Read the character sheet',
+  inventory: 'Checked your inventory',
+  quests: 'Opened the quest log',
+  levels: 'Reached level select',
+  cartridge: 'Booted a cartridge',
+  all_levels: 'Played every level',
+  bonus: 'Found the bonus stage',
+  first_blood: 'Squashed your first bug',
+  combo_10: '10x combo',
+  boss_down: 'Defeated the Memory Leak',
+  survivor: 'Survived a full round',
+  continue: 'Reached the continue screen',
+  konami: 'Up Up Down Down...',
+  sound: 'Turned the volume up',
+  coins: 'Collected 8 coins',
+};

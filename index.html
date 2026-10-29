@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bhavesh Basdeo | Player 1</title>
+  <meta name="description" content="Bhavesh Basdeo, software engineer and FIU computer science student. Backend systems, data tools and AI agents. A retro arcade portfolio." />
+  <meta name="theme-color" content="#0b0a16" />
+  <meta property="og:title" content="Bhavesh Basdeo | Player 1" />
+  <meta property="og:description" content="Software engineer. Backend systems, data tools and AI agents. Press start." />
+  <meta property="og:type" content="website" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8' shape-rendering='crispEdges'%3E%3Crect width='8' height='8' fill='%230b0a16'/%3E%3Cpath fill='%23ffc93c' d='M2 1h4v1h1v4H6v1H2V6H1V2h1z'/%3E%3Cpath fill='%230b0a16' d='M3 2h1v4H3zM4 2h1v1H4zM4 4h1v1H4z'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Space+Grotesk:wght@400;500;700&family=VT323&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+
+  <canvas id="world" aria-hidden="true"></canvas>
+  <div class="world-dim" aria-hidden="true"></div>
+  <div class="crt" aria-hidden="true"></div>
+
+  <!-- Boot / title screen -->
+  <div id="boot" class="boot" role="dialog" aria-modal="true" aria-label="Title screen">
+    <div class="boot-inner">
+      <pre class="boot-log" aria-hidden="true"></pre>
+      <div class="boot-title">
+        <p class="boot-kicker">BHAV ARCADE</p>
+        <h2 class="boot-name">PLAYER 1</h2>
+        <button class="btn btn-coin boot-start" type="button">Press Start</button>
+        <p class="boot-hint">Enter, Space or click</p>
+      </div>
+    </div>
+  </div>
+
+  <header class="hud">
+    <a class="hud-logo" href="#start" aria-label="Back to start">
+      <span class="coin-icon" aria-hidden="true"></span>BHAV
+    </a>
+    <nav class="hud-nav" aria-label="Sections">
+      <a href="#stats" data-nav="stats">About</a>
+      <a href="#inventory" data-nav="inventory">Skills</a>
+      <a href="#quests" data-nav="quests">Experience</a>
+      <a href="#levels" data-nav="levels">Projects</a>
+      <a href="#bonus" data-nav="bonus">Play</a>
+      <a href="#continue" data-nav="continue">Contact</a>
+    </nav>
+    <div class="hud-right">
+      <div class="hud-score" aria-live="off"><span class="hud-label">SCORE</span><span id="score">000000</span></div>
+      <button class="hud-btn" id="trophies" type="button" aria-label="Achievements">
+        <span class="trophy-icon" aria-hidden="true"></span><span id="trophy-count">0</span>
+      </button>
+      <button class="hud-btn" id="sound" type="button" aria-pressed="false" aria-label="Sound effects">
+        <span class="sound-icon" aria-hidden="true"></span>
+      </button>
+      <button class="hud-btn hud-menu" id="menu" type="button" aria-expanded="false" aria-controls="mobile-nav" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </header>
+  <nav id="mobile-nav" class="mobile-nav" aria-label="Sections" hidden></nav>
+
+  <main id="main">
+    <!-- HERO -->
+    <section id="start" class="hero" data-section="start">
+      <div class="hero-copy">
+        <p class="hero-kicker"><span class="blink" aria-hidden="true">&#9654;</span> Player 1 ready</p>
+        <h1 class="hero-name"><span>Bhavesh</span> <span>Basdeo</span></h1>
+        <p class="hero-sub"></p>
+        <div class="hero-ctas">
+          <a class="btn btn-coin" href="#levels">Press Start</a>
+          <a class="btn btn-ghost" href="#continue">Contact</a>
+        </div>
+      </div>
+      <p class="coin-hint" aria-hidden="true">Psst. Click the spinning coins.</p>
+    </section>
+
+    <!-- ABOUT -->
+    <section id="stats" class="section" data-section="stats">
+      <header class="sec-head reveal">
+        <h2 class="sec-title">Character Select</h2>
+        <p class="sec-plain">About me</p>
+      </header>
+      <div class="stats-grid">
+        <figure class="char-card reveal">
+          <div class="char-frame">
+            <canvas class="char-sprite" width="160" height="200" aria-label="Pixel-art player character"></canvas>
+            <div class="char-floor" aria-hidden="true"></div>
+          </div>
+          <figcaption class="char-plate">
+            <span class="char-p1">P1</span>
+            <span class="char-name"></span>
+            <span class="char-class"></span>
+          </figcaption>
+        </figure>
+        <div class="char-info reveal">
+          <div class="dialog about-text"></div>
+          <dl class="stat-list"></dl>
+        </div>
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section id="inventory" class="section" data-section="inventory">
+      <header class="sec-head reveal">
+        <h2 class="sec-title">Inventory</h2>
+        <p class="sec-plain">Skills and tools</p>
+      </header>
+      <div class="inv-wrap reveal">
+        <div class="inv-tabs" role="tablist" aria-label="Skill groups"></div>
+        <div class="inv-body">
+          <div class="inv-grid" role="tabpanel"></div>
+          <aside class="inv-detail" aria-live="polite">
+            <div class="inv-detail-icon"></div>
+            <p class="inv-detail-name"></p>
+            <p class="inv-detail-lvl"></p>
+            <p class="inv-detail-hint">Hover or tap an item</p>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <!-- EXPERIENCE -->
+    <section id="quests" class="section" data-section="quests">
+      <header class="sec-head reveal">
+        <h2 class="sec-title">Quest Log</h2>
+        <p class="sec-plain">Experience and education</p>
+      </header>
+      <ol class="quest-list"></ol>
+    </section>
+
+    <!-- PROJECTS -->
+    <section id="levels" class="section section-wide" data-section="levels">
+      <header class="sec-head reveal">
+        <h2 class="sec-title">Level Select</h2>
+        <p class="sec-plain">Projects. Pick a cartridge to see the details.</p>
+      </header>
+      <div class="carts" role="list"></div>
+      <p class="carts-progress reveal"><span id="levels-played">0</span> / <span id="levels-total">0</span> levels played</p>
+    </section>
+
+    <!-- MINI GAME -->
+    <section id="bonus" class="section" data-section="bonus">
+      <header class="sec-head reveal">
+        <h2 class="sec-title">Bonus Stage</h2>
+        <p class="sec-plain">A one-minute game. Squash the bugs before they ship.</p>
+      </header>
+      <div class="bonus-wrap reveal">
+        <div class="cabinet-screen">
+          <canvas id="game" aria-label="Bug Blaster mini-game. Press Space or tap to start."></canvas>
+        </div>
+        <aside class="bonus-side">
+          <div class="dialog">
+            <p class="side-title">How to play</p>
+            <ul class="controls">
+              <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd> move</li>
+              <li><kbd>Space</kbd> fire</li>
+              <li><kbd>P</kbd> pause</li>
+              <li>Touch: drag to move, auto-fire</li>
+            </ul>
+            <p class="side-title">Power-ups</p>
+            <ul class="powerups">
+              <li><span class="pu">PY</span> spread shot</li>
+              <li><span class="pu">TS</span> shield</li>
+              <li><span class="pu">SQL</span> slow-mo</li>
+            </ul>
+          </div>
+          <p class="bonus-best">Best run <span id="best">0</span></p>
+        </aside>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="continue" class="section continue" data-section="continue">
+      <div class="continue-inner reveal">
+        <h2 class="continue-title">Continue?</h2>
+        <p class="countdown" aria-hidden="true">9</p>
+        <p class="continue-sub">I'm looking for full-time software engineering roles starting January 2027. If you're building something interesting, let's talk.</p>
+        <div class="continue-actions">
+          <a class="btn btn-coin" id="email-btn" href="#">Email me</a>
+          <a class="btn btn-ghost" id="gh-btn" href="#" target="_blank" rel="noopener">GitHub</a>
+          <a class="btn btn-ghost" id="li-btn" href="#" target="_blank" rel="noopener">LinkedIn</a>
+        </div>
+        <p class="copy-note" aria-live="polite"></p>
+      </div>
+      <footer class="footer">
+        <p>&copy; <span id="year"></span> Bhavesh Basdeo. Built with three.js and a lot of coins.</p>
+        <a href="#start" class="footer-top">Insert coin to replay</a>
+      </footer>
+    </section>
+  </main>
+
+  <!-- Project details -->
+  <dialog id="level-modal" class="level-modal" aria-labelledby="lm-name">
+    <div class="lm-inner">
+      <button class="lm-close" type="button" aria-label="Close">&times;</button>
+      <p class="lm-world"></p>
+      <h3 id="lm-name" class="lm-name"></h3>
+      <p class="lm-sub"></p>
+      <p class="lm-blurb"></p>
+      <h4 class="lm-h">Objectives</h4>
+      <ul class="lm-details"></ul>
+      <h4 class="lm-h">Power-ups</h4>
+      <ul class="lm-stack"></ul>
+      <p class="lm-boss"></p>
+      <div class="lm-links"></div>
+    </div>
+  </dialog>
+
+  <!-- Achievements -->
+  <dialog id="ach-modal" class="ach-modal" aria-labelledby="ach-title">
+    <div class="lm-inner">
+      <button class="lm-close" type="button" aria-label="Close">&times;</button>
+      <h3 id="ach-title" class="lm-name">Achievements</h3>
+      <p class="lm-sub"><span id="ach-count">0</span> unlocked. Explore the site to find the rest.</p>
+      <ul class="ach-list"></ul>
+    </div>
+  </dialog>
+
+  <div class="toasts" aria-live="polite"></div>
+
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
