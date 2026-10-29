@@ -14,6 +14,18 @@ const C = {
   lime: '#7dff8a',
 };
 
+const PALETTES = {
+  ship: [C.neon, C.paper, C.hot],
+  heart: [C.hot, C.hot, C.hot],
+  hurt: [C.paper, C.paper, C.paper],
+  zigzag: [C.hot, C.paper, C.coin],
+  diver: [C.hot, C.neon, C.paper],
+  tank: [C.hot, C.coin, C.paper],
+  py: [C.coin, C.ink2, C.paper],
+  ts: [C.neon, C.ink2, C.paper],
+  sql: [C.lime, C.ink2, C.paper],
+};
+
 const ART = {
   ship: [
     '...22...',
@@ -95,9 +107,16 @@ export function createGame(canvas, opts = {}) {
   const g = buffer.getContext('2d', { alpha: false });
   g.imageSmoothingEnabled = false;
   out.imageSmoothingEnabled = false;
+  const backgroundGradient = g.createLinearGradient(0, 0, 0, H);
+  backgroundGradient.addColorStop(0, C.ink);
+  backgroundGradient.addColorStop(1, C.ink2);
+  const vignette = g.createRadialGradient(W / 2, H / 2, 45, W / 2, H / 2, 190);
+  vignette.addColorStop(0, 'rgba(11,10,22,0)');
+  vignette.addColorStop(1, 'rgba(11,10,22,0.54)');
 
   const media = window.matchMedia('(prefers-reduced-motion: reduce)');
   const previousTouchAction = canvas.style.touchAction;
+  const previousLabel = canvas.getAttribute('aria-label');
   const addedTabIndex = !canvas.hasAttribute('tabindex');
   if (addedTabIndex) canvas.tabIndex = 0;
   let reducedMotion = media.matches;
@@ -125,6 +144,7 @@ export function createGame(canvas, opts = {}) {
   let comboClock = 0;
   let slowClock = 0;
   let spreadClock = 0;
+  let pendingShots = 0;
   let achievements = new Set();
 
   const keys = new Set();
@@ -232,7 +252,7 @@ export function createGame(canvas, opts = {}) {
     safeCall(opts.onScore, score);
     timeLeft = ROUND_TIME;
     elapsed = 0;
-    spawnClock = 0.65;
+    spawnClock = 1.8;
     powerClock = 7 + Math.random() * 3;
     bossSpawned = false;
     flash = 0;
@@ -241,6 +261,7 @@ export function createGame(canvas, opts = {}) {
     comboClock = 0;
     slowClock = 0;
     spreadClock = 0;
+    pendingShots = 0;
     achievements = new Set();
     Object.assign(player, {
       x: W / 2,
@@ -253,6 +274,7 @@ export function createGame(canvas, opts = {}) {
     });
     state = 'running';
     manualPaused = false;
+    canvas.setAttribute('aria-label', 'Bug Blaster running. Use arrows or WASD to move, Space to fire, and P to pause.');
     last = performance.now();
     play('start');
     ensureLoop();
@@ -262,7 +284,9 @@ export function createGame(canvas, opts = {}) {
     if (destroyed) return;
     state = 'idle';
     manualPaused = false;
+    canvas.setAttribute('aria-label', previousLabel || 'Bug Blaster mini-game. Press Space or tap to start.');
     player.pointer = false;
+    pendingShots = 0;
     keys.clear();
     if (frame) cancelAnimationFrame(frame);
     frame = 0;
@@ -284,7 +308,7 @@ export function createGame(canvas, opts = {}) {
     last = now;
     if (active()) update(dt);
     render(now / 1000);
-    if (state === 'running') ensureLoop();
+    if (active()) ensureLoop();
   }
 
   function update(dt) {
@@ -336,7 +360,10 @@ export function createGame(canvas, opts = {}) {
     }
     player.x = clamp(player.x + dx * player.speed * dt, 10, W - 10);
     player.y = clamp(player.y + dy * player.speed * dt, H - 61, H - 15);
-    if ((keys.has('Space') || player.pointer) && player.fireClock <= 0) fire();
+    if ((pendingShots > 0 || keys.has('Space') || player.pointer) && player.fireClock <= 0) {
+      if (pendingShots > 0) pendingShots -= 1;
+      fire();
+    }
   }
 
   function fire() {
@@ -360,10 +387,10 @@ export function createGame(canvas, opts = {}) {
     powerClock -= dt;
     if (spawnClock <= 0) {
       const roll = Math.random();
-      const type = elapsed > 18 && roll > 0.76 ? 'tank'
-        : elapsed > 8 && roll > 0.46 ? 'diver' : 'zigzag';
+      const type = elapsed > 24 && roll > 0.78 ? 'tank'
+        : elapsed > 14 && roll > 0.58 ? 'diver' : 'zigzag';
       spawnBug(type);
-      const pace = Math.max(0.38, 1.03 - elapsed * 0.009);
+      const pace = Math.max(0.4, 1.5 - elapsed * 0.019);
       spawnClock = pace * (0.75 + Math.random() * 0.55);
     }
     if (powerClock <= 0) {
@@ -373,10 +400,11 @@ export function createGame(canvas, opts = {}) {
   }
 
   function spawnBug(type) {
+    const ramp = clamp(elapsed / 20, 0, 1);
     const data = {
-      zigzag: { hp: 1, speed: 20, score: 100, w: 11, h: 9 },
-      diver: { hp: 1, speed: 28, score: 160, w: 11, h: 10 },
-      tank: { hp: 3, speed: 11, score: 350, w: 13, h: 11 },
+      zigzag: { hp: 1, speed: 14 + ramp * 6, score: 100, w: 11, h: 9 },
+      diver: { hp: 1, speed: 22 + ramp * 6, score: 160, w: 11, h: 10 },
+      tank: { hp: 3, speed: 9 + ramp * 2, score: 350, w: 13, h: 11 },
     }[type];
     bugs.push({
       ...data,
@@ -515,13 +543,11 @@ export function createGame(canvas, opts = {}) {
       if (!power.dead && hit(player, power, -1)) collectPower(power);
     }
 
-    if (player.invuln <= 0) {
-      for (const bug of bugs) {
-        if (!bug.dead && hit(player, bug, bug.type === 'boss' ? -5 : -2)) {
-          bug.dead = bug.type !== 'boss';
-          hurtPlayer();
-          break;
-        }
+    for (const bug of bugs) {
+      if (!bug.dead && hit(player, bug, bug.type === 'boss' ? -5 : -2)) {
+        bug.dead = bug.type !== 'boss';
+        hurtPlayer();
+        break;
       }
     }
   }
@@ -618,6 +644,7 @@ export function createGame(canvas, opts = {}) {
       highScore = score;
       saveHighScore(highScore);
     }
+    canvas.setAttribute('aria-label', `Bug Blaster ${survived ? 'round clear' : 'game over'}. Score ${score}. Press Space or tap to retry.`);
     safeCall(opts.onGameOver, score);
     render(performance.now() / 1000);
   }
@@ -657,10 +684,7 @@ export function createGame(canvas, opts = {}) {
   }
 
   function drawBackground(now) {
-    const grd = g.createLinearGradient(0, 0, 0, H);
-    grd.addColorStop(0, C.ink);
-    grd.addColorStop(1, C.ink2);
-    g.fillStyle = grd;
+    g.fillStyle = backgroundGradient;
     g.fillRect(-8, -8, W + 16, H + 16);
 
     for (const star of stars) {
@@ -718,13 +742,7 @@ export function createGame(canvas, opts = {}) {
       return;
     }
     const sprite = ART[bug.type];
-    const palette = bug.hurt > 0
-      ? [C.paper, C.paper, C.paper]
-      : bug.type === 'tank'
-        ? [C.hot, C.coin, C.paper]
-        : bug.type === 'diver'
-          ? [C.hot, C.neon, C.paper]
-          : [C.hot, C.paper, C.coin];
+    const palette = bug.hurt > 0 ? PALETTES.hurt : PALETTES[bug.type];
     drawSprite(sprite, bug.x, bug.y, 2, palette);
     if (bug.type === 'tank') {
       const bw = 12;
@@ -764,9 +782,7 @@ export function createGame(canvas, opts = {}) {
   }
 
   function drawPower(power, now) {
-    const colors = power.kind === 'PY' ? [C.coin, C.ink2, C.paper]
-      : power.kind === 'TS' ? [C.neon, C.ink2, C.paper]
-        : [C.lime, C.ink2, C.paper];
+    const colors = PALETTES[power.kind.toLowerCase()];
     const bob = Math.sin(now * 6 + power.x) > 0 ? 0 : 1;
     drawSprite(ART.power, power.x, power.y + bob, 2, colors);
     text(power.kind, power.x, power.y + 2 + bob, colors[2], power.kind === 'SQL' ? 4 : 5, 'center');
@@ -774,7 +790,7 @@ export function createGame(canvas, opts = {}) {
 
   function drawPlayer(now) {
     if (player.invuln > 0 && Math.floor(now * 12) % 2 === 0) return;
-    drawSprite(ART.ship, player.x, player.y, 2, [C.neon, C.paper, C.hot]);
+    drawSprite(ART.ship, player.x, player.y, 2, PALETTES.ship);
     const flame = Math.floor(now * 12) % 2;
     g.fillStyle = flame ? C.coin : C.hot;
     g.fillRect(Math.round(player.x - 3), Math.round(player.y + 8), 2, 3 + flame * 2);
@@ -795,7 +811,7 @@ export function createGame(canvas, opts = {}) {
     text(String(score).padStart(6, '0'), 7, 8, C.coin, 7, 'left');
     text(`${Math.ceil(timeLeft).toString().padStart(2, '0')}s`, W / 2, 8, timeLeft < 10 ? C.hot : C.paper, 7, 'center');
     for (let i = 0; i < player.lives; i += 1) {
-      drawSprite(ART.heart, W - 9 - i * 11, 7, 1, [C.hot, C.hot, C.hot]);
+      drawSprite(ART.heart, W - 9 - i * 11, 7, 1, PALETTES.heart);
     }
     if (combo > 1) text(`COMBO x${combo}`, 7, 21, combo >= 10 ? C.lime : C.coin, 6, 'left');
 
@@ -827,8 +843,8 @@ export function createGame(canvas, opts = {}) {
     if (blink) text('PRESS SPACE / TAP TO START', W / 2, 125, C.coin, 7, 'center');
     text('MOVE: ARROWS / WASD     FIRE: SPACE', W / 2, 145, C.paper, 5, 'center');
     text('PY SPREAD   TS SHIELD   SQL SLOW', W / 2, 158, C.lime, 5, 'center');
-    drawSprite(ART.zigzag, 42, 57, 2, [C.hot, C.paper, C.coin]);
-    drawSprite(ART.ship, 277, 58, 2, [C.neon, C.paper, C.hot]);
+    drawSprite(ART.zigzag, 42, 57, 2, PALETTES.zigzag);
+    drawSprite(ART.ship, 277, 58, 2, PALETTES.ship);
   }
 
   function drawPaused() {
@@ -876,9 +892,6 @@ export function createGame(canvas, opts = {}) {
     g.save();
     g.fillStyle = 'rgba(11,10,22,0.16)';
     for (let y = 1; y < H; y += 3) g.fillRect(0, y, W, 1);
-    const vignette = g.createRadialGradient(W / 2, H / 2, 45, W / 2, H / 2, 190);
-    vignette.addColorStop(0, 'rgba(11,10,22,0)');
-    vignette.addColorStop(1, 'rgba(11,10,22,0.54)');
     g.fillStyle = vignette;
     g.fillRect(0, 0, W, H);
     g.restore();
@@ -898,7 +911,11 @@ export function createGame(canvas, opts = {}) {
     if (event.code === 'KeyP') {
       manualPaused = !manualPaused;
       keys.clear();
+      pendingShots = 0;
       player.pointer = false;
+      canvas.setAttribute('aria-label', manualPaused
+        ? 'Bug Blaster paused. Press P to resume.'
+        : 'Bug Blaster running. Use arrows or WASD to move, Space to fire, and P to pause.');
       last = performance.now();
       event.preventDefault();
       ensureLoop();
@@ -907,6 +924,7 @@ export function createGame(canvas, opts = {}) {
     if (manualPaused) return;
     if (controls.includes(event.code)) {
       if (event.code.startsWith('Arrow') || event.code === 'Space') event.preventDefault();
+      if (event.code === 'Space' && !event.repeat && !keys.has('Space')) pendingShots += 1;
       keys.add(event.code);
     }
   }
@@ -941,12 +959,14 @@ export function createGame(canvas, opts = {}) {
 
   function onBlur() {
     keys.clear();
+    pendingShots = 0;
     player.pointer = false;
   }
 
   function onVisibility() {
     tabVisible = !document.hidden;
     keys.clear();
+    pendingShots = 0;
     player.pointer = false;
     last = performance.now();
     if (tabVisible && state === 'running') ensureLoop();
@@ -954,6 +974,7 @@ export function createGame(canvas, opts = {}) {
 
   function onMotionChange(event) {
     reducedMotion = event.matches;
+    render(performance.now() / 1000);
   }
 
   const resizeObserver = new ResizeObserver(resize);
@@ -961,6 +982,7 @@ export function createGame(canvas, opts = {}) {
   const intersectionObserver = new IntersectionObserver((entries) => {
     inView = Boolean(entries[0] && entries[0].isIntersecting && entries[0].intersectionRatio > 0.05);
     keys.clear();
+    pendingShots = 0;
     player.pointer = false;
     last = performance.now();
     if (inView && state === 'running') ensureLoop();
@@ -998,7 +1020,10 @@ export function createGame(canvas, opts = {}) {
     canvas.removeEventListener('blur', onBlur);
     media.removeEventListener?.('change', onMotionChange);
     canvas.style.touchAction = previousTouchAction;
+    if (previousLabel == null) canvas.removeAttribute('aria-label');
+    else canvas.setAttribute('aria-label', previousLabel);
     if (addedTabIndex) canvas.removeAttribute('tabindex');
+    pendingShots = 0;
     keys.clear();
   }
 

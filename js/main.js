@@ -11,10 +11,20 @@ const store = {
   set(k, v) { try { localStorage.setItem('bhav:' + k, JSON.stringify(v)); } catch { /* ignore */ } },
 };
 
+function storedNumber(key) {
+  const value = Number(store.get(key, 0));
+  return Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
+function storedList(key) {
+  const value = store.get(key, []);
+  return Array.isArray(value) ? value : [];
+}
+
 const state = {
-  score: store.get('score', 0),
-  unlocked: new Set(store.get('ach', [])),
-  played: new Set(store.get('played', [])),
+  score: storedNumber('score'),
+  unlocked: new Set(storedList('ach')),
+  played: new Set(storedList('played')),
   seen: new Set(),
 };
 
@@ -149,6 +159,11 @@ const CART_ART = {
 // --- Boot screen ---------------------------------------------------------------------
 const boot = $('#boot');
 const BOOT_LINES = ['BHAV-OS v2.6 (c) 2026', 'CHECKING RAM ....... 64K OK', 'LOADING SPRITES .... OK', 'CALIBRATING NEON ... OK', 'SPAWNING PLAYER 1 .. OK', ''];
+const bootSiblings = [...document.body.children].filter((el) => el !== boot && el.tagName !== 'SCRIPT');
+
+function setPageInert(inert) {
+  bootSiblings.forEach((el) => { el.inert = inert; });
+}
 
 function runBoot() {
   let seen = false;
@@ -157,14 +172,18 @@ function runBoot() {
     boot.classList.add('hidden');
     return Promise.resolve();
   }
+  setPageInert(true);
   document.body.style.overflow = 'hidden';
   const log = $('.boot-log');
   let i = 0;
+  let finished = false;
+  let stepTimer = 0;
   return new Promise((resolve) => {
     const step = () => {
+      if (finished) return;
       if (i < BOOT_LINES.length) {
         log.textContent += BOOT_LINES[i++] + '\n';
-        setTimeout(step, 180);
+        stepTimer = setTimeout(step, 180);
       } else {
         boot.classList.add('ready');
         $('.boot-start').focus({ preventScroll: true });
@@ -172,10 +191,16 @@ function runBoot() {
     };
     step();
     const start = () => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(stepTimer);
       try { sessionStorage.setItem('bhav:booted', '1'); } catch { /* ignore */ }
       document.removeEventListener('keydown', onKey);
+      $('.boot-start').removeEventListener('click', start);
       boot.classList.add('done');
+      setPageInert(false);
       document.body.style.overflow = '';
+      $('.hero-ctas .btn').focus({ preventScroll: true });
       sfx.play('start');
       world?.kick(2.5);
       setTimeout(() => boot.classList.add('hidden'), 650);
@@ -183,10 +208,11 @@ function runBoot() {
       resolve();
     };
     const onKey = (e) => {
+      if (!boot.classList.contains('ready')) return;
       if (e.key === 'Enter' || e.key === ' ' || e.key === 'Escape') { e.preventDefault(); start(); }
     };
     document.addEventListener('keydown', onKey);
-    boot.addEventListener('click', start, { once: true });
+    $('.boot-start').addEventListener('click', start, { once: true });
   });
 }
 
@@ -241,7 +267,12 @@ function renderInventory() {
   }
 
   function openGroup(gi) {
-    $$('.inv-tab', tabs).forEach((t, i) => t.setAttribute('aria-selected', String(i === gi)));
+    $$('.inv-tab', tabs).forEach((t, i) => {
+      const selected = i === gi;
+      t.setAttribute('aria-selected', String(selected));
+      t.tabIndex = selected ? 0 : -1;
+    });
+    grid.setAttribute('aria-labelledby', `inventory-tab-${gi}`);
     grid.innerHTML = '';
     inventory[gi].items.forEach((item, i) => {
       const b = document.createElement('button');
@@ -265,8 +296,20 @@ function renderInventory() {
     t.className = 'inv-tab';
     t.type = 'button';
     t.role = 'tab';
+    t.id = `inventory-tab-${i}`;
+    t.setAttribute('aria-controls', 'inventory-panel');
     t.textContent = g.group;
     t.addEventListener('click', () => { openGroup(i); sfx.play('select'); });
+    t.addEventListener('keydown', (e) => {
+      const last = inventory.length - 1;
+      const next = e.key === 'ArrowRight' ? (i + 1) % inventory.length
+        : e.key === 'ArrowLeft' ? (i + last) % inventory.length
+          : e.key === 'Home' ? 0 : e.key === 'End' ? last : null;
+      if (next == null) return;
+      e.preventDefault();
+      openGroup(next);
+      tabs.children[next].focus();
+    });
     tabs.appendChild(t);
   });
   openGroup(0);
@@ -310,6 +353,7 @@ function renderQuests() {
 
 // --- Level select -----------------------------------------------------------------------------
 const modal = $('#level-modal');
+let levelOpening = false;
 
 function renderLevels() {
   const wrap = $('.carts');
@@ -373,6 +417,8 @@ function updatePlayed() {
 }
 
 function openLevel(lv, cartEl) {
+  if (levelOpening || modal.open) return;
+  levelOpening = true;
   sfx.play('coin');
   const go = () => {
     const inner = $('.lm-inner', modal);
@@ -397,6 +443,7 @@ function openLevel(lv, cartEl) {
     });
     if (lv.note) links.appendChild(Object.assign(document.createElement('p'), { className: 'lm-note', textContent: lv.note }));
     modal.showModal();
+    levelOpening = false;
 
     if (!state.played.has(lv.id)) {
       state.played.add(lv.id);
@@ -497,6 +544,12 @@ function wireNav() {
     sfx.play(open ? 'select' : 'back');
   });
   mobile.addEventListener('click', (e) => { if (e.target.closest('a')) { mobile.hidden = true; menu.setAttribute('aria-expanded', 'false'); } });
+  mobile.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    mobile.hidden = true;
+    menu.setAttribute('aria-expanded', 'false');
+    menu.focus();
+  });
 
   const sectionObs = new IntersectionObserver((entries) => {
     entries.forEach((e) => {
@@ -530,8 +583,8 @@ function wireSound() {
   const btn = $('#sound');
   const set = (on) => {
     sfx.setEnabled(on);
-    btn.setAttribute('aria-pressed', String(on));
-    store.set('sound', on);
+    btn.setAttribute('aria-pressed', String(sfx.enabled));
+    store.set('sound', sfx.enabled);
   };
   btn.addEventListener('click', () => {
     set(!sfx.enabled);
@@ -598,7 +651,7 @@ let gameActive = false;
 async function startGame() {
   const canvas = $('#game');
   const best = $('#best');
-  best.textContent = store.get('best', 0);
+  best.textContent = storedNumber('best');
   try {
     const { createGame } = await import('./game.js');
     const game = createGame(canvas, {
@@ -606,7 +659,7 @@ async function startGame() {
       onScore: () => { gameActive = true; },
       onGameOver: (final) => {
         gameActive = false;
-        if (final > store.get('best', 0)) { store.set('best', final); best.textContent = final; }
+        if (final > storedNumber('best')) { store.set('best', final); best.textContent = final; }
         if (final > 0) addScore(Math.round(final / 10));
       },
       onAchievement: (id, label) => unlock(id, label),

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><title>Layout check</title></head>
+<body>
+  <pre id="result">pending</pre>
+  <script>
+    sessionStorage.setItem('bhav:booted', '1');
+    const frame = document.createElement('iframe');
+    frame.src = '../index.html';
+    frame.style.cssText = 'position:fixed;inset:0;width:100vw;height:100vh;border:0';
+    frame.addEventListener('load', () => setTimeout(() => {
+      const doc = frame.contentDocument;
+      const root = doc.documentElement;
+      document.querySelector('#result').textContent = JSON.stringify({
+        clientWidth: root.clientWidth,
+        rootScrollWidth: root.scrollWidth,
+        bodyScrollWidth: doc.body.scrollWidth,
+      });
+    }, 1500));
+    document.body.appendChild(frame);
+  </script>
+</body>
+</html>

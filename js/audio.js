@@ -6,16 +6,22 @@ let master = null;
 let enabled = false;
 
 function ensure() {
-  if (!ctx) {
-    const AC = window.AudioContext || window.webkitAudioContext;
-    if (!AC) return null;
-    ctx = new AC();
-    master = ctx.createGain();
-    master.gain.value = 0.18;
-    master.connect(ctx.destination);
+  try {
+    if (!ctx) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0.18;
+      master.connect(ctx.destination);
+    }
+    if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+    return ctx;
+  } catch {
+    ctx = null;
+    master = null;
+    return null;
   }
-  if (ctx.state === 'suspended') ctx.resume();
-  return ctx;
 }
 
 // One square/triangle blip with a pitch sweep.
@@ -63,8 +69,8 @@ const sounds = {
 export const sfx = {
   get enabled() { return enabled; },
   setEnabled(on) {
-    enabled = on;
-    if (on) ensure();
+    enabled = Boolean(on);
+    if (enabled && !ensure()) enabled = false;
   },
   play(name) {
     if (!enabled || !sounds[name]) return;

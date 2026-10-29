@@ -378,14 +378,14 @@ main { position: relative; z-index: var(--z-content); }
   background: var(--ink); box-shadow: 0 0 0 4px var(--muted);
 }
 .quest[data-status="Complete"]::before { background: var(--lime); box-shadow: 0 0 0 4px var(--lime); }
-.quest[data-status="In progress"]::before, .quest[data-status="Active"]::before { background: var(--coin); box-shadow: 0 0 0 4px var(--coin); animation: blink 1.2s steps(2) infinite; }
+.quest[data-status="In progress"]::before, .quest[data-status="Active"]::before, .quest[data-status="Resume listed"]::before { background: var(--coin); box-shadow: 0 0 0 4px var(--coin); animation: blink 1.2s steps(2) infinite; }
 .quest-btn {
   width: 100%; text-align: left; background: none; border: 0; cursor: pointer;
   display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 20px 24px;
 }
 .quest-badge { font-family: var(--display); font-size: 9px; letter-spacing: .1em; color: var(--ink); padding: 6px 8px; justify-self: start; }
 .quest[data-status="Complete"] .quest-badge { background: var(--lime); }
-.quest[data-status="In progress"] .quest-badge, .quest[data-status="Active"] .quest-badge { background: var(--coin); }
+.quest[data-status="In progress"] .quest-badge, .quest[data-status="Active"] .quest-badge, .quest[data-status="Resume listed"] .quest-badge { background: var(--coin); }
 .quest-when { font-family: var(--term); font-size: 20px; color: var(--muted); grid-row: 1; grid-column: 2; }
 .quest-title { font-family: var(--display); font-size: clamp(12px, 1.4vw, 15px); line-height: 1.5; margin: 8px 0 0; grid-column: 1 / -1; color: var(--paper); }
 .quest-org { font-size: 17px; color: var(--neon); grid-column: 1 / -1; }

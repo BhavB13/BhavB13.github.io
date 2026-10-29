@@ -150,6 +150,7 @@ function canvasTexture(w, h) {
 }
 
 const INVADER = ['00100000100', '00010001000', '00111111100', '01101110110', '11111111111', '10111111101', '10100000101', '00011011000'];
+const INVADER_FLIPPED = INVADER.map((row) => [...row].reverse().join(''));
 
 function drawSprite(g, rows, x, y, s, color) {
   g.fillStyle = color;
@@ -251,9 +252,9 @@ function drawScreen({ g, tex }, t, score) {
   // marching invaders
   const ox = Math.sin(t * 0.8) * 18;
   const frame = Math.floor(t * 3) % 2;
+  const rows = frame ? INVADER : INVADER_FLIPPED;
   for (let r = 0; r < 2; r++) {
     for (let i = 0; i < 4; i++) {
-      const rows = frame ? INVADER : INVADER.map((row) => row.split('').reverse().join(''));
       drawSprite(g, rows, 30 + i * 34 + ox, 18 + r * 22, 2, r ? '#3cf0ff' : '#7dff8a');
     }
   }
@@ -312,6 +313,8 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     return null;
   }
   const lowPower = Math.min(window.innerWidth, window.innerHeight) < 700 || (navigator.hardwareConcurrency || 8) <= 4;
+  const motionMedia = window.matchMedia('(prefers-reduced-motion: reduce)');
+  let motionReduced = reducedMotion || motionMedia.matches;
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, lowPower ? 1 : 1.5));
   renderer.toneMapping = THREE.NoToneMapping;
 
@@ -366,12 +369,24 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
 
   // input
   const ray = new THREE.Raycaster();
+  const ndc = new THREE.Vector2();
   const mouse = new THREE.Vector2();
   const target = new THREE.Vector2();
-  const hitboxes = () => coins.filter((c) => c.userData.pop === 0 && !c.userData.respawn).map((c) => c.children[0]);
+  const coinHitboxes = [];
+  const intersections = [];
+  const hitboxes = () => {
+    coinHitboxes.length = 0;
+    for (const coin of coins) {
+      if (coin.userData.pop === 0 && !coin.userData.respawn) coinHitboxes.push(coin.children[0]);
+    }
+    return coinHitboxes;
+  };
   const pick = (x, y) => {
-    ray.setFromCamera(new THREE.Vector2((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1), camera);
-    const hit = ray.intersectObjects(hitboxes(), false)[0];
+    ndc.set((x / window.innerWidth) * 2 - 1, -(y / window.innerHeight) * 2 + 1);
+    ray.setFromCamera(ndc, camera);
+    intersections.length = 0;
+    ray.intersectObjects(hitboxes(), false, intersections);
+    const hit = intersections[0];
     return hit ? hit.object.userData.coin : null;
   };
   let hovering = false;
@@ -405,6 +420,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   let t = 0;
   let offset = 0;
   let lastDim = -1;
+  let lastScreenFrame = -1;
   let skip = false;
 
   function setPalette(name) {
@@ -435,7 +451,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     const vh = window.innerHeight;
     const prog = Math.min(window.scrollY / vh, 1.6);
     boost *= 0.94;
-    const motion = reducedMotion ? 0.15 : 1;
+    const motion = motionReduced ? 0 : 1;
     offset += dt * (4 + boost * 10) * speed * motion;
     terrain.material.uniforms.uOffset.value = offset;
     sun.material.uniforms.uTime.value = t * motion;
@@ -453,7 +469,7 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     rig.rotation.y = -0.45 + mouse.x * 0.5 + prog * 1.2;
     rig.rotation.x = -mouse.y * 0.12;
     cab.joystick.position.x = -0.3 + mouse.x * 0.04;
-    cab.ring.material.opacity = 0.45 + Math.sin(t * 3) * 0.2;
+    cab.ring.material.opacity = motionReduced ? 0.55 : 0.45 + Math.sin(t * 3) * 0.2;
 
     coins.forEach((c, i) => {
       const u = c.userData;
@@ -479,9 +495,13 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     camera.position.y = 2.4 + mouse.y * 0.3 - prog * 0.6;
     camera.lookAt(portrait ? 0 : 0.6, (portrait ? 2.7 : 1.6) - prog * 0.8, 0);
 
-    stars.rotation.y = t * 0.004;
+    stars.rotation.y = motionReduced ? 0 : t * 0.004;
 
-    if (Math.floor(t * 12) !== Math.floor((t - dt) * 12)) drawScreen(cab.screen, t, hiScore);
+    const screenFrame = motionReduced ? 0 : Math.floor(t * 12);
+    if (screenFrame !== lastScreenFrame) {
+      drawScreen(cab.screen, motionReduced ? 0 : t, hiScore);
+      lastScreenFrame = screenFrame;
+    }
 
     // dim the world as content scrolls over it (CSS reads --dim)
     const dim = Math.min(prog / 0.9, 1);
@@ -495,19 +515,23 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
   requestAnimationFrame(frame);
 
   const onVis = () => { visible = !document.hidden; };
+  const onMotion = (event) => { motionReduced = event.matches; };
   document.addEventListener('visibilitychange', onVis);
+  motionMedia.addEventListener?.('change', onMotion);
 
   return {
     click: onClick,
     kick(amount = 1) { boost = Math.min(boost + amount, 3); },
     setPalette,
     get palette() { return palette; },
-    setHiScore(s) { hiScore = s; },
+    setHiScore(s) { hiScore = s; lastScreenFrame = -1; },
     dispose() {
       running = false;
       window.removeEventListener('resize', resize);
       window.removeEventListener('pointermove', onMove);
       document.removeEventListener('visibilitychange', onVis);
+      motionMedia.removeEventListener?.('change', onMotion);
+      document.body.style.cursor = '';
       renderer.dispose();
     },
   };

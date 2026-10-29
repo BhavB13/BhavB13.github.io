@@ -119,7 +119,7 @@
       <div class="inv-wrap reveal">
         <div class="inv-tabs" role="tablist" aria-label="Skill groups"></div>
         <div class="inv-body">
-          <div class="inv-grid" role="tabpanel"></div>
+          <div id="inventory-panel" class="inv-grid" role="tabpanel"></div>
           <aside class="inv-detail" aria-live="polite">
             <div class="inv-detail-icon"></div>
             <p class="inv-detail-name"></p>
@@ -157,10 +157,10 @@
       </header>
       <div class="bonus-wrap reveal">
         <div class="cabinet-screen">
-          <canvas id="game" tabindex="0" aria-label="Bug Blaster mini-game. Press Space or tap to start."></canvas>
+          <canvas id="game" tabindex="0" role="application" aria-label="Bug Blaster mini-game. Press Space or tap to start." aria-describedby="game-help"></canvas>
         </div>
         <aside class="bonus-side">
-          <div class="dialog">
+          <div class="dialog" id="game-help">
             <p class="side-title">How to play</p>
             <ul class="controls">
               <li><kbd>&larr;</kbd><kbd>&rarr;</kbd> or <kbd>A</kbd><kbd>D</kbd> move</li>
