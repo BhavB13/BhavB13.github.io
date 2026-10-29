@@ -651,6 +651,7 @@ kbd {
 .cart-art { transition: opacity .35s var(--ease); }
 
 .lm-shots { margin: 0 0 8px; display: grid; gap: 10px; }
+.lm-shots[hidden] { display: none; }
 .lm-monitor {
   position: relative; background: #05040c; padding: 10px;
   box-shadow: 0 0 0 4px var(--ink-4), inset 0 0 0 2px rgba(255, 255, 255, .04);
@@ -672,3 +673,4 @@ kbd {
 }
 .lm-thumb img { width: 100%; height: 100%; object-fit: cover; object-position: top left; }
 .lm-thumb[aria-pressed="true"], .lm-thumb:hover { opacity: 1; box-shadow: 0 0 0 3px var(--c, var(--coin)); }
+.lm-shots[hidden] { display: none !important; }

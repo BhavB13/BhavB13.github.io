@@ -46,3 +46,9 @@
 - Rebuilt `js/scene.js` around a measured, scroll-driven road journey. The hero cabinet now recedes down the road, six alternating roadside landmarks arrive with their matching content sections, terrain travel reverses with scroll direction, and Konami palette changes reach every new landmark and sign.
 - Section offsets are cached on resize and through a frame-throttled `ResizeObserver`. Active scroll and damping render every frame, settled content views return to roughly 30 fps, reduced motion removes automatic movement, and the CSS world dim now tops out at `0.6`.
 - `node --check js/scene.js` and `git diff --check -- js/scene.js` passed. The local server returned the module with HTTP 200. The browser automation host was unavailable and headless Edge did not produce a render, so WebGL appearance and browser-console output could not be verified in this environment.
+
+## Round 3
+
+- Fixed the screenshot figure so `hidden` wins over its grid display rule, made the main dialog image lazy, and gave thumbnail buttons descriptive action names. Chrome confirmed real alt text, two labeled toggle buttons, stable image dimensions, and no empty monitor for projects without screenshots.
+- At 375 by 812, portrait landmarks are smaller, sit in the clear band below the HUD, and disappear before passing too close to the camera. Character, quest, level, bonus, and continue views were checked for overlap and clipping.
+- The required module syntax checks passed for `main.js` and `scene.js`; the `data.js` import printed `ok`; all 6 game tests passed; `git diff --check` passed; and the user-visible files contain no em dash or en dash characters.

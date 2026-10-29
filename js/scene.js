@@ -598,8 +598,8 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
       const sectionY = index == null ? 0 : sectionOffsets[index];
       const arrivalY = Math.max(0, sectionY - window.innerHeight * 0.22);
       landmark.travel = (arrivalY / scrollRange) * journeyLength;
-      landmark.group.position.x = landmark.side * (portrait ? 3.75 : 7.4);
-      landmark.group.scale.setScalar(portrait ? 0.62 : 1);
+      landmark.group.position.x = landmark.side * (portrait ? 2.8 : 7.4);
+      landmark.group.scale.setScalar(portrait ? 0.36 : 1);
       landmark.group.rotation.y = landmark.side * (portrait ? -0.08 : -0.14);
     }
   }
@@ -767,9 +767,9 @@ export function initScene(canvas, { onCoin = () => {}, reducedMotion = false } =
     for (let i = 0; i < landmarks.records.length; i++) {
       const landmark = landmarks.records[i];
       const z = landmarkPassZ + scrollTravel - landmark.travel;
-      landmark.group.visible = z > -150 && z < 20;
+      landmark.group.visible = z > -150 && z < (portrait ? 0 : 20);
       landmark.group.position.z = z;
-      landmark.group.position.y = Math.sin(t * 0.9 + i) * 0.1 * motion;
+      landmark.group.position.y = (portrait ? 8.2 : 0) + Math.sin(t * 0.9 + i) * 0.1 * motion;
       const animated = landmark.group.userData.animated;
       if (animated) {
         if (landmark.kind === 'map') animated.rotation.y = Math.sin(t * 0.55) * 0.12 * motion;

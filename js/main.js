@@ -440,7 +440,7 @@ function renderShots(lv) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'lm-thumb';
-    b.setAttribute('aria-label', `Screenshot ${i + 1} of ${shots.length}`);
+    b.setAttribute('aria-label', `Show screenshot ${i + 1} of ${shots.length}: ${s.alt}`);
     b.innerHTML = '<img alt="" loading="lazy">';
     b.firstChild.src = s.src;
     b.addEventListener('click', () => { show(i); sfx.play('select'); });
