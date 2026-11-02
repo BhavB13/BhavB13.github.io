@@ -52,3 +52,25 @@
 - Fixed the screenshot figure so `hidden` wins over its grid display rule, made the main dialog image lazy, and gave thumbnail buttons descriptive action names. Chrome confirmed real alt text, two labeled toggle buttons, stable image dimensions, and no empty monitor for projects without screenshots.
 - At 375 by 812, portrait landmarks are smaller, sit in the clear band below the HUD, and disappear before passing too close to the camera. Character, quest, level, bonus, and continue views were checked for overlap and clipping.
 - The required module syntax checks passed for `main.js` and `scene.js`; the `data.js` import printed `ok`; all 6 game tests passed; `git diff --check` passed; and the user-visible files contain no em dash or en dash characters.
+
+## Round 4A
+
+### Audit method and before state
+
+- Lighthouse mobile and desktop scores could not be collected. `npx.cmd -y lighthouse@12` could not reach the npm registry (`EACCES`), command-line access to the live URL was blocked, and the browser access host was unavailable. No scores are reported or estimated.
+- The manual audit used the deployed `main` branch source as the before state and fresh local Chromium renders and request logs as the after state. Before these edits, `scene.js` and `game.js` were started on initial load, project hover screenshots depended only on the browser's broad native lazy-load threshold, image elements did not all reserve their intrinsic size, and canonical and crawler files were absent.
+- The likely LCP element is the text-only `PLAYER 1` title on the opaque boot screen. The existing Google Fonts setup already preconnects to both required origins and requests `display=swap`, so it was kept. The main stylesheet remains render-blocking because it defines the complete above-the-fold boot presentation.
+
+### Changes and after state
+
+- Three.js now starts only after the required title-screen interaction and can load during the existing 650 ms fade. The far-below-fold mini-game module starts only when its canvas is within 600 px of the viewport.
+- Project hover screenshots receive a `src` only within 400 px of the viewport. A local Chromium before render fetched five hidden screenshots totaling 323,058 bytes; the after render fetched none during the initial title screen. The after request set was limited to the document, stylesheet, `main.js`, `data.js`, and `audio.js`, with no `scene.js`, `game.js`, or screenshot request before interaction.
+- The character animation now stops while offscreen. Project images and modal thumbnails use asynchronous decoding and exact 1280 by 800 intrinsic dimensions, matching every source WebP, to reduce decoding contention and layout-shift risk.
+- Added canvas fallback text, explicit image semantics for the character canvas, and `aria-current="location"` on the active desktop and mobile section links.
+- Added the canonical URL, crawler directive, `robots.txt`, and `sitemap.xml`. The existing meta description, social metadata, heading structure, color contrast, focus indicators, and reduced-motion rules were retained.
+
+### Verification
+
+- Edge headless rendered the title screen at 1440 by 900 and 375 by 812 with no clipping or visual regression.
+- `node --input-type=module --check < js/main.js` passed.
+- All 6 game tests passed, `git diff --check` passed, and the user-visible files contain no em dash or en dash characters.

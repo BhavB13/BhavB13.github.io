@@ -4,6 +4,26 @@ import { sfx } from './audio.js';
 const $ = (s, el = document) => el.querySelector(s);
 const $$ = (s, el = document) => [...el.querySelectorAll(s)];
 const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const imageObserver = 'IntersectionObserver' in window
+  ? new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => {
+      if (!entry.isIntersecting) return;
+      const img = entry.target;
+      img.src = img.dataset.src;
+      delete img.dataset.src;
+      observer.unobserve(img);
+    });
+  }, { rootMargin: '400px 0px' })
+  : null;
+
+function deferImage(img, src) {
+  if (!imageObserver) {
+    img.src = src;
+    return;
+  }
+  img.dataset.src = src;
+  imageObserver.observe(img);
+}
 
 // --- Persistence (best effort; private windows may block storage) -------------
 const store = {
@@ -130,7 +150,9 @@ function animateHero(canvas) {
   const scale = 9;
   const ox = (canvas.width - 16 * scale) / 2;
   let t = 0;
-  const tick = () => {
+  let active = false;
+  let frame = 0;
+  const draw = () => {
     t++;
     const bob = reduceMotion ? 0 : (Math.floor(t / 30) % 2) * scale * 0.5;
     const rows = HERO.slice();
@@ -140,9 +162,22 @@ function animateHero(canvas) {
     // cape flutter
     if (!reduceMotion && Math.floor(t / 20) % 2) rows[15] = '.CCcbbBBBBbbcCC.';
     drawPixels(canvas, rows, HERO_PAL, scale, ox, 8 + bob);
-    if (!reduceMotion || t < 2) requestAnimationFrame(tick);
   };
-  tick();
+  const tick = () => {
+    frame = 0;
+    draw();
+    if (active) frame = requestAnimationFrame(tick);
+  };
+  draw();
+  if (reduceMotion) return;
+  new IntersectionObserver(([entry]) => {
+    active = entry.isIntersecting;
+    if (active && !frame) frame = requestAnimationFrame(tick);
+    if (!active && frame) {
+      cancelAnimationFrame(frame);
+      frame = 0;
+    }
+  }, { rootMargin: '200px 0px' }).observe(canvas);
 }
 
 const CART_ART = {
@@ -384,8 +419,11 @@ function renderLevels() {
     $('.cart-sub', b).textContent = lv.subtitle;
     if (lv.shots?.length) {
       // the real screenshot glows through the label on hover, like an attract screen
-      const shot = Object.assign(document.createElement('img'), { className: 'cart-shot', alt: '', loading: 'lazy', src: lv.shots[0].src });
+      const shot = Object.assign(document.createElement('img'), {
+        className: 'cart-shot', alt: '', loading: 'lazy', decoding: 'async', width: 1280, height: 800,
+      });
       $('.cart-label', b).prepend(shot);
+      deferImage(shot, lv.shots[0].src);
     }
     const art = CART_ART[lv.id];
     const cv = $('.cart-art', b);
@@ -441,7 +479,7 @@ function renderShots(lv) {
     b.type = 'button';
     b.className = 'lm-thumb';
     b.setAttribute('aria-label', `Show screenshot ${i + 1} of ${shots.length}: ${s.alt}`);
-    b.innerHTML = '<img alt="" loading="lazy">';
+    b.innerHTML = '<img alt="" loading="lazy" decoding="async" width="1280" height="800">';
     b.firstChild.src = s.src;
     b.addEventListener('click', () => { show(i); sfx.play('select'); });
     thumbs.appendChild(b);
@@ -589,7 +627,12 @@ function wireNav() {
     entries.forEach((e) => {
       if (!e.isIntersecting) return;
       const id = e.target.dataset.section;
-      links.forEach((a) => a.classList.toggle('active', a.dataset.nav === id));
+      $$('.hud-nav a, .mobile-nav a').forEach((a) => {
+        const active = a.dataset.nav === id;
+        a.classList.toggle('active', active);
+        if (active) a.setAttribute('aria-current', 'location');
+        else a.removeAttribute('aria-current');
+      });
       if (!state.seen.has(id)) {
         state.seen.add(id);
         if (id !== 'start') { addScore(100); unlock(id); }
@@ -711,6 +754,20 @@ async function startGame() {
   }
 }
 
+function deferGame() {
+  const canvas = $('#game');
+  if (!('IntersectionObserver' in window)) {
+    startGame();
+    return;
+  }
+  const observer = new IntersectionObserver(([entry]) => {
+    if (!entry.isIntersecting) return;
+    observer.disconnect();
+    startGame();
+  }, { rootMargin: '600px 0px' });
+  observer.observe(canvas);
+}
+
 // --- Boot it all ------------------------------------------------------------------------------------------
 renderScore();
 renderTrophies();
@@ -723,6 +780,11 @@ wireModals();
 wireNav();
 wireSound();
 wireKonami();
-startWorld();
-startGame();
-runBoot().then(typeTagline);
+// The mini-game is far below the fold, so load it only shortly before it is needed.
+deferGame();
+// The opaque title screen does not need the 3D world. Start it during the existing
+// fade after the visitor enters, so its dependency graph cannot delay first paint.
+runBoot().then(() => {
+  typeTagline();
+  startWorld();
+});
